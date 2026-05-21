@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { PenLine, Pin } from 'lucide-react'
 import { useEntryStore } from '../../stores/useEntryStore'
 import { formatDate } from '../../lib/utils'
+import { getMoodById } from '../../lib/moodData'
 import type { Entry } from '../../../../types'
 
 interface EntryListProps {
   entries: Entry[]
   activeEntryId: string | null
   onSelect?: () => void
-}
-
-const moodEmojis: Record<number, string> = {
-  1: '😢', 2: '😞', 3: '😐', 4: '😊', 5: '🔥'
 }
 
 export default function EntryList({ entries, activeEntryId, onSelect }: EntryListProps): JSX.Element {
@@ -165,7 +162,7 @@ function EntryListItem({ entry, isActive, onSelect, index = 0 }: {
           </div>
           {entry.mood && (
             <span className="text-sm flex-shrink-0 mt-0.5" aria-label={`Mood ${entry.mood}`}>
-              {moodEmojis[entry.mood] || ''}
+              {getMoodById(entry.mood)?.emoji ?? ''}
             </span>
           )}
         </div>

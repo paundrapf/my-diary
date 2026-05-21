@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEntryStore } from '../stores/useEntryStore'
 import { useNavigate } from 'react-router-dom'
+import { getMoodColor } from '../lib/moodData'
 import type { Entry } from '../../../types'
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -74,14 +75,6 @@ export default function Calendar(): JSX.Element {
     }
   }
 
-  const moodColors: Record<number, string> = {
-    1: '#EF4444',
-    2: '#F59E0B',
-    3: '#9CA3AF',
-    4: '#14B8A6',
-    5: '#8B5CF6'
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -144,7 +137,7 @@ export default function Calendar(): JSX.Element {
                       <span
                         key={i}
                         className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: e.mood ? moodColors[e.mood] : 'var(--text-tertiary)' }}
+                        style={{ backgroundColor: e.mood ? getMoodColor(e.mood) || 'var(--text-tertiary)' : 'var(--text-tertiary)' }}
                       />
                     ))}
                     {dayEntries.length > 3 && (

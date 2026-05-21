@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { getMoodById } from '../lib/moodData'
 
 interface Stats {
   totalEntries: number
@@ -9,10 +10,6 @@ interface Stats {
   streak: number
   mostProductiveDay: string | null
   topTags: { name: string; count: number }[]
-}
-
-const moodEmojis: Record<number, string> = {
-  1: '😢', 2: '😞', 3: '😐', 4: '😊', 5: '🔥'
 }
 
 export default function Insights(): JSX.Element {
@@ -61,7 +58,7 @@ export default function Insights(): JSX.Element {
             <StatCard label="Avg Words/Entry" value={String(stats.avgWordsPerEntry)} />
             <StatCard
               label="Avg Mood (30d)"
-              value={stats.avgMood ? `${stats.avgMood} ${moodEmojis[Math.round(stats.avgMood)] || ''}` : '—'}
+              value={stats.avgMood ? `${stats.avgMood.toFixed(1)} ${getMoodById(Math.round(stats.avgMood))?.emoji ?? ''}` : '—'}
             />
             <StatCard
               label="Most Productive Day"
