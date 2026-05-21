@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEntryStore } from '../../stores/useEntryStore'
 import { formatDate } from '../../lib/utils'
@@ -69,7 +70,7 @@ export default function EntryList({ entries, activeEntryId, onSelect }: EntryLis
               </div>
             )}
             <div className="px-4 py-1.5 text-[10px] font-medium text-text-tertiary uppercase tracking-wider">
-              {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+              {new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </div>
             <AnimatePresence>
               {normalEntries.map((entry, i) => (
@@ -97,48 +98,116 @@ function EntryListItem({ entry, isActive, onSelect, index = 0 }: {
 }): JSX.Element {
   const preview = entry.content_preview || 'No content'
   const title = entry.title || 'Untitled'
+  const pinEntry = useEntryStore((s) => s.pinEntry)
+  const duplicateEntry = useEntryStore((s) => s.duplicateEntry)
+  const deleteEntry = useEntryStore((s) => s.deleteEntry)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+
+  const handleContextMenu = (e: React.MouseEvent): void => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY })
+  }
+
+  const handlePin = async (): Promise<void> => {
+    setContextMenu(null)
+    await pinEntry(entry.id, !entry.is_pinned)
+  }
+
+  const handleDuplicate = async (): Promise<void> => {
+    setContextMenu(null)
+    await duplicateEntry(entry.id)
+  }
+
+  const handleDelete = async (): Promise<void> => {
+    setContextMenu(null)
+    if (window.confirm('Delete this entry? It will be moved to Trash.')) {
+      await deleteEntry(entry.id)
+    }
+  }
 
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
-      transition={{
-        type: 'spring',
-        stiffness: 400,
-        damping: 35,
-        delay: Math.min(index * 0.02, 0.3)
-      }}
-      onClick={() => onSelect(entry.id)}
-      className={`w-full text-left px-4 py-2.5 transition-colors ${
-        isActive ? 'bg-accent-soft/50' : 'hover:bg-bg-tertiary/50'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <h3 className={`text-xs font-medium truncate ${isActive ? 'text-accent' : 'text-text-primary'}`}>
-              {title}
-            </h3>
-            {entry.is_pinned ? (
-              <span className="text-[10px] text-text-tertiary flex-shrink-0">📌</span>
-            ) : null}
+    <>
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
+        transition={{
+          type: 'spring',
+          stiffness: 400,
+          damping: 35,
+          delay: Math.min(index * 0.02, 0.3)
+        }}
+        onClick={() => onSelect(entry.id)}
+        onContextMenu={handleContextMenu}
+        className={`w-full text-left px-4 py-2.5 transition-colors ${
+          isActive ? 'bg-accent-soft/50' : 'hover:bg-bg-tertiary/50'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h3 className={`text-xs font-medium truncate ${isActive ? 'text-accent' : 'text-text-primary'}`}>
+                {title}
+              </h3>
+              {entry.is_pinned ? (
+                <span className="text-[10px] text-text-tertiary flex-shrink-0" aria-label="Pinned">📌</span>
+              ) : null}
+            </div>
+            <p className="text-[11px] text-text-secondary truncate leading-relaxed">
+              {preview}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] text-text-tertiary">
+                {formatDate(entry.last_edited_at || entry.updated_at)}
+              </span>
+            </div>
           </div>
-          <p className="text-[11px] text-text-secondary truncate leading-relaxed">
-            {preview}
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-text-tertiary">
-              {formatDate(entry.last_edited_at || entry.updated_at)}
+          {entry.mood && (
+            <span className="text-sm flex-shrink-0 mt-0.5" aria-label={`Mood ${entry.mood}`}>
+              {moodEmojis[entry.mood] || ''}
             </span>
-          </div>
+          )}
         </div>
-        {entry.mood && (
-          <span className="text-sm flex-shrink-0 mt-0.5">
-            {moodEmojis[entry.mood] || ''}
-          </span>
+      </motion.button>
+
+      <AnimatePresence>
+        {contextMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-50"
+              onClick={() => setContextMenu(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.1 }}
+              className="fixed z-[60] bg-bg-primary border border-border-default rounded-lg shadow-xl py-1 min-w-[140px]"
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+            >
+              <button
+                onClick={handlePin}
+                className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary transition-colors"
+              >
+                {entry.is_pinned ? 'Unpin' : 'Pin'}
+              </button>
+              <button
+                onClick={handleDuplicate}
+                className="w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary transition-colors"
+              >
+                Duplicate
+              </button>
+              <div className="mx-2 my-0.5 border-t border-border-subtle" />
+              <button
+                onClick={handleDelete}
+                className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 transition-colors"
+              >
+                Delete
+              </button>
+            </motion.div>
+          </>
         )}
-      </div>
-    </motion.button>
+      </AnimatePresence>
+    </>
   )
 }
