@@ -209,15 +209,17 @@ export function registerEntryHandlers(): void {
         .run()
       return true
     } catch (err: any) {
-      if (err?.code === 'SQLITE_CORRUPT_VTAB') {
-        logger.warn('FTS5 corruption detected in softDelete. Rebuilding FTS5 and retrying...')
+      if (err?.code?.includes?.('CORRUPT')) {
+        logger.warn(`Corruption detected (${err.code}). Rebuilding FTS5 and retrying...`)
         rebuildFts5(sqliteDb)
-        const db = getDb()
-        db.update(entries)
-          .set({ deleted_at: nowISO() })
-          .where(eq(entries.id, id))
-          .run()
-        return true
+        try {
+          sqliteDb.prepare('UPDATE entries SET deleted_at = ? WHERE id = ?').run(nowISO(), id)
+          return true
+        } catch {
+          logger.warn('Soft delete failed after rebuild. Performing hard delete...')
+          sqliteDb.prepare('DELETE FROM entries WHERE id = ?').run(id)
+          return true
+        }
       }
       throw err
     }

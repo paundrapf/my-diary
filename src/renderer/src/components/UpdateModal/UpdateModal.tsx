@@ -35,15 +35,15 @@ export default function UpdateModal(): JSX.Element | null {
         >
           <span className="text-xs text-text-primary">
             {downloaded
-              ? `Update ${version} is ready to install`
-              : `Update ${version} is available`}
+              ? `You have an update (v${version}). Restart the app to apply changes.`
+              : `Update (v${version}) is available`}
           </span>
           {downloaded ? (
             <button
               onClick={handleUpdate}
               className="px-3 py-1 rounded-lg bg-accent text-white text-[11px] font-medium hover:opacity-90 transition-opacity"
             >
-              Update Now
+              Restart Now
             </button>
           ) : (
             <span className="text-[11px] text-text-secondary">Downloading...</span>

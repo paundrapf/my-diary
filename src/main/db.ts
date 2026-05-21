@@ -242,7 +242,18 @@ export function rebuildFts5(db: Database.Database): void {
       INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
       VALUES ('delete', old.rowid, old.title, old.content_preview);
     END;
-    CREATE TRIGGER IF NOT EXISTS entries_au AFTER UPDATE ON entries BEGIN
+    DROP TRIGGER IF EXISTS entries_au;
+    CREATE TRIGGER IF NOT EXISTS entries_content_update AFTER UPDATE OF content ON entries
+    WHEN new.deleted_at IS NULL
+    BEGIN
+      INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
+      VALUES ('delete', old.rowid, old.title, old.content_preview);
+      INSERT INTO entries_fts(rowid, title, content_preview)
+      VALUES (new.rowid, new.title, new.content_preview);
+    END;
+    CREATE TRIGGER IF NOT EXISTS entries_title_update AFTER UPDATE OF title ON entries
+    WHEN new.deleted_at IS NULL
+    BEGIN
       INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
       VALUES ('delete', old.rowid, old.title, old.content_preview);
       INSERT INTO entries_fts(rowid, title, content_preview)
