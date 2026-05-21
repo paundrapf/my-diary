@@ -32,7 +32,6 @@
     },
     "nsis": {
       "oneClick": true,
-      "installerSilent": true,
       "deleteAppDataOnUninstall": true
     },
     "linux": {
