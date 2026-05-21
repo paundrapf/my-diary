@@ -17,6 +17,18 @@
       var theme = localStorage.getItem('theme');
       if (theme === 'dark') document.documentElement.className = 'dark';
     })();
+    // Scroll-triggered reveal observer
+    document.addEventListener('DOMContentLoaded', function() {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+    });
   </script>
 </head>
 <body>
@@ -142,16 +154,16 @@
   <!-- ════════════════════════════════════════════════════════ FEATURES -->
   <section class="features" aria-label="Features">
     <div class="section-inner">
-      <div class="feat feat-reverse">
+      <div class="feat feat-reveal-1">
         <div class="feat-visual">
           <div class="feat-editor-preview">
             <div class="fep-toolbar"><span></span><span></span><span></span><span></span><span></span></div>
             <div class="fep-body">
-              <div class="fep-line fep-w-60"><b>Dear diary,</b></div>
-              <div class="fep-line fep-w-80">Today I discovered something</div>
-              <div class="fep-line fep-w-50">remarkable about the way</div>
-              <div class="fep-line fep-w-70">ideas flow when you write</div>
-              <div class="fep-line fep-w-40">them down by hand.</div>
+              <div class="fep-line fep-w-60 fep-line-bold"></div>
+              <div class="fep-line fep-w-80"></div>
+              <div class="fep-line fep-w-50"></div>
+              <div class="fep-line fep-w-70"></div>
+              <div class="fep-line fep-w-40"></div>
             </div>
             <div class="fep-footer"><span></span><span></span></div>
           </div>
@@ -162,7 +174,7 @@
         </div>
       </div>
 
-      <div class="feat">
+      <div class="feat feat-reveal-2">
         <div class="feat-text">
           <h3 class="feat-title">Like GitHub for<br>your thoughts.</h3>
           <p class="feat-desc">Every time you save, a snapshot is created. Browse through your writing history, compare any two versions side by side with color-coded diffs, and restore any point in time.</p>
@@ -184,7 +196,7 @@
         </div>
       </div>
 
-      <div class="feat feat-reverse">
+      <div class="feat feat-reveal-3">
         <div class="feat-visual">
           <div class="feat-mood-preview">
             <div class="fmp-row">
@@ -216,7 +228,7 @@
         </div>
       </div>
 
-      <div class="feat">
+      <div class="feat feat-reveal-4">
         <div class="feat-text">
           <h3 class="feat-title">Yours, and<br>yours alone.</h3>
           <p class="feat-desc">No cloud, no servers, no accounts. PIN-lock your journal with automatic lock. Every byte stays on your machine. Export anytime to Markdown, PDF, or plain text.</p>
@@ -235,7 +247,7 @@
   </section>
 
   <!-- ════════════════════════════════════════════════════════ DOWNLOAD -->
-  <section class="download" aria-label="Download">
+  <section class="download reveal" aria-label="Download">
     <div class="section-inner">
       <div class="download-box">
         <h2 class="download-title">Get My Diary</h2>
@@ -259,7 +271,7 @@
   </section>
 
   <!-- ════════════════════════════════════════════════════════ OPEN SOURCE -->
-  <section class="oss" aria-label="Open Source">
+  <section class="oss reveal" aria-label="Open Source">
     <div class="section-inner">
       <div class="oss-box">
         <h2 class="oss-title">Open Source</h2>
