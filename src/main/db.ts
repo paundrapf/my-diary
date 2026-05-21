@@ -77,13 +77,42 @@ export function initDb(): void {
 
 function runMigrations(db: Database.Database): void {
   const migrationTx = db.transaction(() => {
+    // Migration v2: Remove old mood CHECK constraint (1-5 → 1-50)
+    const tableDef = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='entries'").get() as { sql: string } | undefined
+    if (tableDef && tableDef.sql.includes('CHECK(mood BETWEEN 1 AND 5)')) {
+      db.exec(`PRAGMA foreign_keys = OFF`)
+      db.exec(`
+        CREATE TABLE entries_v2 (
+          id TEXT PRIMARY KEY NOT NULL,
+          title TEXT NOT NULL DEFAULT '',
+          content TEXT NOT NULL DEFAULT '',
+          content_preview TEXT,
+          mood INTEGER,
+          is_pinned INTEGER DEFAULT 0,
+          is_locked INTEGER DEFAULT 0,
+          word_count INTEGER DEFAULT 0,
+          last_edited_at TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT
+        )
+      `)
+      db.exec(`
+        INSERT INTO entries_v2 (id, title, content, content_preview, mood, is_pinned, is_locked, word_count, last_edited_at, created_at, updated_at, deleted_at)
+        SELECT id, title, content, content_preview, mood, is_pinned, is_locked, word_count, last_edited_at, created_at, updated_at, deleted_at FROM entries
+      `)
+      db.exec(`DROP TABLE entries`)
+      db.exec(`ALTER TABLE entries_v2 RENAME TO entries`)
+      db.exec(`PRAGMA foreign_keys = ON`)
+    }
+
     db.exec(`
       CREATE TABLE IF NOT EXISTS entries (
         id TEXT PRIMARY KEY NOT NULL,
         title TEXT NOT NULL DEFAULT '',
         content TEXT NOT NULL DEFAULT '',
         content_preview TEXT,
-        mood INTEGER CHECK(mood BETWEEN 1 AND 5),
+        mood INTEGER,
         is_pinned INTEGER DEFAULT 0,
         is_locked INTEGER DEFAULT 0,
         word_count INTEGER DEFAULT 0,
