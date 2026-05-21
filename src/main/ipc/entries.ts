@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { eq, desc, sql, and, isNull, isNotNull } from 'drizzle-orm'
+import { eq, desc, sql, and, isNull } from 'drizzle-orm'
 import { getDb, generateId, nowISO, getSqliteDb } from '../db'
 import { entries, entryVersions, entryTags, tags } from '../../../drizzle/schema'
 import { computeDiffHtml } from '../diff'
