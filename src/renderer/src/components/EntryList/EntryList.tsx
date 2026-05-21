@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PenLine, Pin } from 'lucide-react'
 import { useEntryStore } from '../../stores/useEntryStore'
 import { formatDate } from '../../lib/utils'
 import type { Entry } from '../../../../types'
@@ -43,7 +44,7 @@ export default function EntryList({ entries, activeEntryId, onSelect }: EntryLis
       <div className="flex-1 overflow-y-auto">
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="text-4xl mb-3">📝</div>
+            <PenLine strokeWidth={1.5} size={40} className="text-text-tertiary mb-3" />
             <p className="text-text-secondary text-xs mb-2">Belum ada entri</p>
             <p className="text-text-tertiary text-[10px]">
               Klik + atau tekan ⌘N untuk memulai
@@ -150,7 +151,7 @@ function EntryListItem({ entry, isActive, onSelect, index = 0 }: {
                 {title}
               </h3>
               {entry.is_pinned ? (
-                <span className="text-[10px] text-text-tertiary flex-shrink-0" aria-label="Pinned">📌</span>
+                <Pin strokeWidth={1.5} size={12} className="text-accent flex-shrink-0" aria-label="Pinned" />
               ) : null}
             </div>
             <p className="text-[11px] text-text-secondary truncate leading-relaxed">

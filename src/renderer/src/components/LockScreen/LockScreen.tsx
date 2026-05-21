@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { Lock } from 'lucide-react'
 
 interface LockScreenProps {
   onUnlock: () => void
@@ -65,7 +66,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps): JSX.Element {
         transition={{ duration: 0.4 }}
         className="text-center px-8"
       >
-        <div className="text-4xl mb-4">🔒</div>
+        <Lock strokeWidth={1.5} size={40} className="text-text-tertiary mx-auto mb-4" />
         <h2 className="text-lg font-semibold text-text-primary mb-2">App Locked</h2>
         <p className="text-sm text-text-secondary mb-6">Enter your PIN to continue</p>
 

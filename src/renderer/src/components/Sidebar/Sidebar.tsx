@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { BookOpen, Calendar, Pin, BarChart3, Folders, PenLine, Settings as SettingsIcon } from 'lucide-react'
 import { useUIStore } from '../../stores/useUIStore'
 import { useEntryStore } from '../../stores/useEntryStore'
 import { useEffect } from 'react'
 
 const navItems = [
-  { icon: '📖', label: 'Semua Entri', page: 'journal' as const, path: '/' },
-  { icon: '📅', label: 'Kalender', page: 'calendar' as const, path: '/calendar' },
-  { icon: '📌', label: 'Disematkan', page: 'journal' as const, path: '/pinned' },
-  { icon: '📊', label: 'Insights', page: 'insights' as const, path: '/insights' },
-  { icon: '🗂', label: 'Kategori', page: 'tags' as const, path: '/' }
+  { Icon: BookOpen, label: 'Semua Entri', page: 'journal' as const, path: '/' },
+  { Icon: Calendar, label: 'Kalender', page: 'calendar' as const, path: '/calendar' },
+  { Icon: Pin, label: 'Disematkan', page: 'journal' as const, path: '/pinned' },
+  { Icon: BarChart3, label: 'Insights', page: 'insights' as const, path: '/insights' },
+  { Icon: Folders, label: 'Kategori', page: 'tags' as const, path: '/' }
 ]
 
 interface TagItem {
@@ -45,7 +46,7 @@ export default function Sidebar(): JSX.Element {
     }
   }
 
-  const handleNav = (item: typeof navItems[0]): void => {
+  const handleNav = (item: typeof navItems[number]): void => {
     setActivePage(item.page)
     if (item.path === '/pinned') {
       loadEntries({ pinned: true })
@@ -163,7 +164,7 @@ export default function Sidebar(): JSX.Element {
                           : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
                       }`}
                     >
-                      <span className="text-sm">{item.icon}</span>
+                      <item.Icon strokeWidth={1.5} size={16} className="flex-shrink-0" />
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -196,10 +197,7 @@ export default function Sidebar(): JSX.Element {
                     onClick={() => navigate('/settings')}
                     className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-all"
                   >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M12.5 8a4.5 4.5 0 01-.5 2l1.5 1-1 1.5-1.5-1a4.5 4.5 0 01-4 0l-1.5 1-1-1.5L5.5 10a4.5 4.5 0 010-4L4 5l1-1.5L6.5 4.5a4.5 4.5 0 014 0L12 3.5 13 5l-1.5 1c.3.6.5 1.3.5 2z" stroke="currentColor" strokeWidth="1.5" />
-                    </svg>
+                    <SettingsIcon strokeWidth={1.5} size={16} />
                     <span>Settings</span>
                   </button>
                 </div>
@@ -215,17 +213,17 @@ export default function Sidebar(): JSX.Element {
           onMouseEnter={() => setIsPeeking(true)}
           onMouseLeave={() => setIsPeeking(false)}
         >
-          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-white text-[10px] font-bold">M</span>
+          <div className="w-8 h-8 flex items-center justify-center rounded-lg text-accent">
+            <PenLine strokeWidth={1.5} size={18} />
           </div>
           {navItems.map((item) => (
             <button
               key={item.label}
               onClick={() => handleNav(item)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors text-text-secondary"
               title={item.label}
             >
-              <span className="text-sm">{item.icon}</span>
+              <item.Icon strokeWidth={1.5} size={16} />
             </button>
           ))}
           <div className="mt-auto">
@@ -234,10 +232,7 @@ export default function Sidebar(): JSX.Element {
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-tertiary transition-colors text-text-secondary"
               title="Settings"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M12.5 8a4.5 4.5 0 01-.5 2l1.5 1-1 1.5-1.5-1a4.5 4.5 0 01-4 0l-1.5 1-1-1.5L5.5 10a4.5 4.5 0 010-4L4 5l1-1.5L6.5 4.5a4.5 4.5 0 014 0L12 3.5 13 5l-1.5 1c.3.6.5 1.3.5 2z" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
+              <SettingsIcon strokeWidth={1.5} size={16} />
             </button>
           </div>
         </div>
