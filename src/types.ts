@@ -91,6 +91,21 @@ export interface ElectronAPI {
     set: (data: { key: string; value: string }) => Promise<void>
     getAll: () => Promise<Record<string, string>>
   }
+  insights: {
+    getStats: () => Promise<{
+      totalEntries: number
+      totalWords: number
+      avgWordsPerEntry: number
+      avgMood: number | null
+      streak: number
+      mostProductiveDay: string | null
+      topTags: { name: string; count: number }[]
+    }>
+  }
+  export: {
+    entry: (data: { entryId: string; format: 'md' | 'pdf' | 'txt' }) => Promise<string | null>
+    all: (data: { format: 'md' | 'txt' }) => Promise<string | null>
+  }
   app: {
     lock: () => Promise<void>
     unlock: (pin: string) => Promise<boolean>

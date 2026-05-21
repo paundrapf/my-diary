@@ -36,6 +36,15 @@ const api = {
     set: (data: { key: string; value: string }) => ipcRenderer.invoke('settings:set', data),
     getAll: () => ipcRenderer.invoke('settings:getAll')
   },
+  insights: {
+    getStats: () => ipcRenderer.invoke('insights:getStats')
+  },
+  export: {
+    entry: (data: { entryId: string; format: 'md' | 'pdf' | 'txt' }) =>
+      ipcRenderer.invoke('entries:export', data),
+    all: (data: { format: 'md' | 'txt' }) =>
+      ipcRenderer.invoke('entries:exportAll', data)
+  },
   app: {
     lock: () => ipcRenderer.invoke('app:lock'),
     unlock: (pin: string) => ipcRenderer.invoke('app:unlock', pin),

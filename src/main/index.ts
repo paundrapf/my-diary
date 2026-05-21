@@ -6,6 +6,8 @@ import { registerEntryHandlers } from './ipc/entries'
 import { registerTagHandlers } from './ipc/tags'
 import { registerEntryTagHandlers } from './ipc/entry-tags'
 import { registerSettingsHandlers } from './ipc/settings'
+import { registerInsightsHandlers } from './ipc/insights'
+import { registerExportHandlers } from './ipc/export'
 import { registerAppHandlers } from './ipc/app'
 
 let mainWindow: BrowserWindow | null = null
@@ -61,6 +63,8 @@ app.whenReady().then(() => {
   registerTagHandlers()
   registerEntryTagHandlers()
   registerSettingsHandlers()
+  registerInsightsHandlers()
+  registerExportHandlers()
   registerAppHandlers()
 
   createWindow()
