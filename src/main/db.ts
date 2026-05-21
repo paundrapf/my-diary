@@ -167,50 +167,9 @@ function runMigrations(db: Database.Database): void {
       CREATE INDEX IF NOT EXISTS idx_entries_deleted_at ON entries(deleted_at);
       CREATE INDEX IF NOT EXISTS idx_entries_pinned ON entries(is_pinned);
 
-      -- Rebuild FTS5 if it exists to ensure sync
-      DROP TABLE IF EXISTS entries_fts;
-
-      CREATE VIRTUAL TABLE entries_fts USING fts5(
-        title, content_preview,
-        content='entries',
-        content_rowid='rowid'
-      );
-
-      -- Re-populate FTS5 from existing entries
-      INSERT INTO entries_fts(rowid, title, content_preview)
-      SELECT rowid, title, content_preview FROM entries WHERE deleted_at IS NULL;
-
-      CREATE TRIGGER IF NOT EXISTS entries_ai AFTER INSERT ON entries BEGIN
-        INSERT INTO entries_fts(rowid, title, content_preview)
-        VALUES (new.rowid, new.title, new.content_preview);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS entries_ad AFTER DELETE ON entries BEGIN
-        INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
-        VALUES ('delete', old.rowid, old.title, old.content_preview);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS entries_au AFTER UPDATE ON entries BEGIN
-        INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
-        VALUES ('delete', old.rowid, old.title, old.content_preview);
-        INSERT INTO entries_fts(rowid, title, content_preview)
-        VALUES (new.rowid, new.title, new.content_preview);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS entries_soft_delete AFTER UPDATE OF deleted_at ON entries
-      WHEN new.deleted_at IS NOT NULL AND old.deleted_at IS NULL
-      BEGIN
-        INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
-        VALUES ('delete', old.rowid, old.title, old.content_preview);
-      END;
-
-      CREATE TRIGGER IF NOT EXISTS entries_soft_restore AFTER UPDATE OF deleted_at ON entries
-      WHEN new.deleted_at IS NULL AND old.deleted_at IS NOT NULL
-      BEGIN
-        INSERT INTO entries_fts(rowid, title, content_preview)
-        VALUES (new.rowid, new.title, new.content_preview);
-      END;
     `)
+
+    rebuildFts5(db)
 
     const defaultSettings: Record<string, string> = {
       theme: 'system',
@@ -256,4 +215,50 @@ export function generateId(): string {
 
 export function nowISO(): string {
   return new Date().toISOString()
+}
+
+export function rebuildFts5(db: Database.Database): void {
+  db.exec(`DROP TABLE IF EXISTS entries_fts`)
+
+  db.exec(`
+    CREATE VIRTUAL TABLE entries_fts USING fts5(
+      title, content_preview,
+      content='entries',
+      content_rowid='rowid'
+    )
+  `)
+
+  db.exec(`
+    INSERT INTO entries_fts(rowid, title, content_preview)
+    SELECT rowid, title, content_preview FROM entries WHERE deleted_at IS NULL
+  `)
+
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS entries_ai AFTER INSERT ON entries BEGIN
+      INSERT INTO entries_fts(rowid, title, content_preview)
+      VALUES (new.rowid, new.title, new.content_preview);
+    END;
+    CREATE TRIGGER IF NOT EXISTS entries_ad AFTER DELETE ON entries BEGIN
+      INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
+      VALUES ('delete', old.rowid, old.title, old.content_preview);
+    END;
+    CREATE TRIGGER IF NOT EXISTS entries_au AFTER UPDATE ON entries BEGIN
+      INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
+      VALUES ('delete', old.rowid, old.title, old.content_preview);
+      INSERT INTO entries_fts(rowid, title, content_preview)
+      VALUES (new.rowid, new.title, new.content_preview);
+    END;
+    CREATE TRIGGER IF NOT EXISTS entries_soft_delete AFTER UPDATE OF deleted_at ON entries
+    WHEN new.deleted_at IS NOT NULL AND old.deleted_at IS NULL
+    BEGIN
+      INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
+      VALUES ('delete', old.rowid, old.title, old.content_preview);
+    END;
+    CREATE TRIGGER IF NOT EXISTS entries_soft_restore AFTER UPDATE OF deleted_at ON entries
+    WHEN new.deleted_at IS NULL AND old.deleted_at IS NOT NULL
+    BEGIN
+      INSERT INTO entries_fts(rowid, title, content_preview)
+      VALUES (new.rowid, new.title, new.content_preview);
+    END;
+  `)
 }

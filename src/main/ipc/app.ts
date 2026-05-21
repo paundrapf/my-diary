@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
 import { app } from 'electron'
 import { join } from 'path'
-import { getDb } from '../db'
+import { getDb, getSqliteDb, rebuildFts5 } from '../db'
 import { settings } from '../../../drizzle/schema'
 import { logger } from '../logger'
 
@@ -89,6 +89,24 @@ export function registerAppHandlers(): void {
 
   ipcMain.handle('app:getVersion', async () => {
     return app.getVersion()
+  })
+
+  ipcMain.handle('app:repairDatabase', async () => {
+    try {
+      const sqliteDb = getSqliteDb()
+      const integrity = sqliteDb.pragma('integrity_check') as { integrity_check: string }[]
+      const isCorrupt = integrity.some((row) => row.integrity_check !== 'ok')
+      if (isCorrupt) {
+        logger.warn('Database integrity check failed. Rebuilding FTS5...')
+      }
+      rebuildFts5(sqliteDb)
+      logger.info('FTS5 rebuilt successfully')
+      return { success: true }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.error(`Database repair failed: ${msg}`)
+      return { success: false, error: msg }
+    }
   })
 
   // Window controls

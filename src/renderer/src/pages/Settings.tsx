@@ -27,6 +27,8 @@ export default function Settings(): JSX.Element {
   const [appVersion, setAppVersion] = useState('')
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'uptodate' | 'error'>('idle')
   const [updateError, setUpdateError] = useState('')
+  const [repairStatus, setRepairStatus] = useState<'idle' | 'repairing' | 'done' | 'error'>('idle')
+  const [repairError, setRepairError] = useState('')
 
   useEffect(() => {
     window.api.app.getVersion().then(setAppVersion).catch(() => setAppVersion(''))
@@ -51,6 +53,19 @@ export default function Settings(): JSX.Element {
   const handleCheckUpdate = async (): Promise<void> => {
     setUpdateStatus('checking')
     await window.api.app.checkForUpdate()
+  }
+
+  const handleRepairDatabase = async (): Promise<void> => {
+    setRepairStatus('repairing')
+    const result = await window.api.app.repairDatabase()
+    if (result.success) {
+      setRepairStatus('done')
+      setTimeout(() => setRepairStatus('idle'), 3000)
+    } else {
+      setRepairStatus('error')
+      setRepairError(result.error || 'Repair failed')
+      setTimeout(() => setRepairStatus('idle'), 5000)
+    }
   }
 
   if (!settings) return <div className="p-8 text-text-tertiary text-sm">Loading...</div>
@@ -286,6 +301,17 @@ export default function Settings(): JSX.Element {
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
                 </svg>
                 {updateStatus === 'checking' ? 'Checking...' : updateStatus === 'uptodate' ? 'Up to date' : updateStatus === 'error' ? updateError : 'Check for Updates'}
+              </button>
+              <button
+                onClick={handleRepairDatabase}
+                disabled={repairStatus === 'repairing'}
+                className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-text-secondary text-xs hover:bg-bg-tertiary transition-colors text-left disabled:opacity-40"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 2v4l-3 3M10 2v4l3 3M8 14v-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" />
+                </svg>
+                {repairStatus === 'repairing' ? 'Repairing...' : repairStatus === 'done' ? 'Database repaired' : repairStatus === 'error' ? repairError : 'Repair Database'}
               </button>
               <button
                 onClick={() => window.api.app.openLogsFolder()}

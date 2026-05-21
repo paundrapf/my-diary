@@ -1,8 +1,9 @@
 import { ipcMain } from 'electron'
 import { eq, desc, sql, and, isNull } from 'drizzle-orm'
-import { getDb, generateId, nowISO, getSqliteDb } from '../db'
+import { getDb, generateId, nowISO, getSqliteDb, rebuildFts5 } from '../db'
 import { entries, entryVersions, entryTags, tags } from '../../../drizzle/schema'
 import { computeDiffHtml } from '../diff'
+import { logger } from '../logger'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim().slice(0, 200)
@@ -199,12 +200,27 @@ export function registerEntryHandlers(): void {
   })
 
   ipcMain.handle('entries:softDelete', async (_event, id: string) => {
-    const db = getDb()
-    db.update(entries)
-      .set({ deleted_at: nowISO() })
-      .where(eq(entries.id, id))
-      .run()
-    return true
+    const sqliteDb = getSqliteDb()
+    try {
+      const db = getDb()
+      db.update(entries)
+        .set({ deleted_at: nowISO() })
+        .where(eq(entries.id, id))
+        .run()
+      return true
+    } catch (err: any) {
+      if (err?.code === 'SQLITE_CORRUPT_VTAB') {
+        logger.warn('FTS5 corruption detected in softDelete. Rebuilding FTS5 and retrying...')
+        rebuildFts5(sqliteDb)
+        const db = getDb()
+        db.update(entries)
+          .set({ deleted_at: nowISO() })
+          .where(eq(entries.id, id))
+          .run()
+        return true
+      }
+      throw err
+    }
   })
 
   ipcMain.handle('entries:pin', async (_event, data: { id: string; is_pinned: boolean }) => {

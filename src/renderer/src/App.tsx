@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { X } from 'lucide-react'
 import Sidebar from './components/Sidebar/Sidebar'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import LockScreen from './components/LockScreen/LockScreen'
@@ -25,6 +26,12 @@ export default function App(): JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const isLocked = useUIStore((s) => s.isLocked)
   const setLocked = useUIStore((s) => s.setLocked)
+  const storeError = useEntryStore((s) => s.error)
+  const [dismissedError, setDismissedError] = useState(false)
+
+  useEffect(() => {
+    if (storeError) setDismissedError(false)
+  }, [storeError])
 
   useEffect(() => {
     loadEntries()
@@ -120,6 +127,19 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app-layout">
+      {storeError && !dismissedError && (
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -30 }}
+          className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-4 py-2 bg-red-500/90 backdrop-blur-sm text-white text-[11px]"
+        >
+          <span>{storeError}</span>
+          <button onClick={() => setDismissedError(true)} className="p-0.5 hover:bg-white/20 rounded">
+            <X size={14} strokeWidth={1.5} />
+          </button>
+        </motion.div>
+      )}
       <Sidebar />
       <main
         className="flex-1 overflow-hidden"

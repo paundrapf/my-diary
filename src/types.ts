@@ -114,6 +114,7 @@ export interface ElectronAPI {
     openLogsFolder: () => Promise<void>
     getVersion: () => Promise<string>
     checkForUpdate: () => Promise<unknown>
+    repairDatabase: () => Promise<{ success: boolean; error?: string }>
     quitAndInstall: () => Promise<void>
     openReleases: () => Promise<void>
     onLocked: (callback: () => void) => () => void

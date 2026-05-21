@@ -53,6 +53,7 @@ const api = {
     openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder'),
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
+    repairDatabase: () => ipcRenderer.invoke('app:repairDatabase'),
     quitAndInstall: () => ipcRenderer.invoke('app:quit-and-install'),
     openReleases: () => ipcRenderer.invoke('app:openReleases'),
     onLocked: (callback: () => void) => {
