@@ -104,6 +104,31 @@ app.whenReady().then(() => {
     autoUpdater.quitAndInstall()
   })
 
+  ipcMain.handle('app:checkForUpdate', async () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('app:checking-update')
+    }
+    try {
+      const result = await autoUpdater.checkForUpdates()
+      if (result && result.updateInfo && result.updateInfo.version === app.getVersion()) {
+        if (mainWindow) {
+          mainWindow.webContents.send('app:update-not-available')
+        }
+      }
+      return result?.updateInfo || null
+    } catch (err) {
+      logger.error(`Manual update check failed: ${err instanceof Error ? err.message : String(err)}`)
+      if (mainWindow) {
+        mainWindow.webContents.send('app:update-error', err instanceof Error ? err.message : String(err))
+      }
+      return null
+    }
+  })
+
+  ipcMain.handle('app:openReleases', async () => {
+    shell.openExternal('https://github.com/paundrapf/my-diary/releases')
+  })
+
   createWindow()
 
   // Delayed update check (10s after ready)

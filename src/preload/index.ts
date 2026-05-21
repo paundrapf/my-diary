@@ -52,7 +52,9 @@ const api = {
     log: (level: string, message: string) => ipcRenderer.invoke('app:log', level, message),
     openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder'),
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
     quitAndInstall: () => ipcRenderer.invoke('app:quit-and-install'),
+    openReleases: () => ipcRenderer.invoke('app:openReleases'),
     onLocked: (callback: () => void) => {
       const handler = (): void => callback()
       ipcRenderer.on('app:locked', handler)
@@ -67,6 +69,16 @@ const api = {
       const handler = (_event: unknown, version: string): void => callback(version)
       ipcRenderer.on('app:update-downloaded', handler)
       return () => ipcRenderer.removeListener('app:update-downloaded', handler)
+    },
+    onUpdateNotAvailable: (callback: () => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('app:update-not-available', handler)
+      return () => ipcRenderer.removeListener('app:update-not-available', handler)
+    },
+    onUpdateError: (callback: (msg: string) => void) => {
+      const handler = (_event: unknown, msg: string): void => callback(msg)
+      ipcRenderer.on('app:update-error', handler)
+      return () => ipcRenderer.removeListener('app:update-error', handler)
     },
     getWindow: () => ({
       minimize: () => ipcRenderer.invoke('window:minimize'),

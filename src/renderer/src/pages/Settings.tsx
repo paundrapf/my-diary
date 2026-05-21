@@ -25,10 +25,33 @@ export default function Settings(): JSX.Element {
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState('')
   const [appVersion, setAppVersion] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'uptodate' | 'error'>('idle')
+  const [updateError, setUpdateError] = useState('')
 
   useEffect(() => {
     window.api.app.getVersion().then(setAppVersion).catch(() => setAppVersion(''))
   }, [])
+
+  useEffect(() => {
+    const unsubNotAvailable = window.api.app.onUpdateNotAvailable(() => {
+      setUpdateStatus('uptodate')
+      setTimeout(() => setUpdateStatus('idle'), 3000)
+    })
+    const unsubError = window.api.app.onUpdateError((msg) => {
+      setUpdateStatus('error')
+      setUpdateError(msg)
+      setTimeout(() => setUpdateStatus('idle'), 5000)
+    })
+    return () => {
+      unsubNotAvailable()
+      unsubError()
+    }
+  }, [])
+
+  const handleCheckUpdate = async (): Promise<void> => {
+    setUpdateStatus('checking')
+    await window.api.app.checkForUpdate()
+  }
 
   if (!settings) return <div className="p-8 text-text-tertiary text-sm">Loading...</div>
 
@@ -236,15 +259,44 @@ export default function Settings(): JSX.Element {
 
         <Section title="About">
           <div className="space-y-3">
+            <div className="pb-2 border-b border-border-subtle">
+              <p className="text-xs font-medium text-text-primary">My Diary</p>
+              <p className="text-[11px] text-text-secondary mt-0.5">Desktop journaling app with git-like version history</p>
+            </div>
             <SettingRow label="Version">
               <span className="text-[11px] text-text-secondary">{appVersion}</span>
             </SettingRow>
-            <button
-              onClick={() => window.api.app.openLogsFolder()}
-              className="w-full px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary text-xs hover:bg-bg-tertiary/70 transition-colors text-left"
-            >
-              View Logs
-            </button>
+            <div className="flex flex-col gap-1.5 pt-1">
+              <button
+                onClick={() => window.api.app.openReleases()}
+                className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-text-secondary text-xs hover:bg-bg-tertiary transition-colors text-left"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Release Notes
+              </button>
+              <button
+                onClick={handleCheckUpdate}
+                disabled={updateStatus === 'checking'}
+                className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-text-secondary text-xs hover:bg-bg-tertiary transition-colors text-left disabled:opacity-40"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 3v5l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+                {updateStatus === 'checking' ? 'Checking...' : updateStatus === 'uptodate' ? 'Up to date' : updateStatus === 'error' ? updateError : 'Check for Updates'}
+              </button>
+              <button
+                onClick={() => window.api.app.openLogsFolder()}
+                className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-lg text-text-secondary text-xs hover:bg-bg-tertiary transition-colors text-left"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                View Logs
+              </button>
+            </div>
           </div>
         </Section>
       </div>

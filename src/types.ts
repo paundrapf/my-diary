@@ -113,10 +113,14 @@ export interface ElectronAPI {
     log: (level: string, message: string) => Promise<void>
     openLogsFolder: () => Promise<void>
     getVersion: () => Promise<string>
+    checkForUpdate: () => Promise<unknown>
     quitAndInstall: () => Promise<void>
+    openReleases: () => Promise<void>
     onLocked: (callback: () => void) => () => void
     onUpdateAvailable: (callback: (version: string) => void) => () => void
     onUpdateDownloaded: (callback: (version: string) => void) => () => void
+    onUpdateNotAvailable: (callback: () => void) => () => void
+    onUpdateError: (callback: (msg: string) => void) => () => void
     getWindow: () => { minimize: () => void; maximize: () => void; close: () => void }
   }
 }
