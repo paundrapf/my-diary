@@ -16,6 +16,7 @@ function countWords(text: string): number {
 export function registerEntryHandlers(): void {
   ipcMain.handle('entries:create', async (_event, data: { title?: string; content?: string; mood?: number }) => {
     const db = getDb()
+    const sqliteDb = getSqliteDb()
     const id = generateId()
     const now = nowISO()
     const title = data.title || ''
@@ -36,20 +37,21 @@ export function registerEntryHandlers(): void {
       deleted_at: null
     }
 
-    db.insert(entries).values(entry).run()
-
-    const versionId = generateId()
-    db.insert(entryVersions).values({
-      id: versionId,
-      entry_id: id,
-      title,
-      content,
-      content_preview: stripHtml(content),
-      word_count: countWords(content),
-      version: 1,
-      change_desc: 'Initial',
-      created_at: now
-    }).run()
+    const createEntryTx = sqliteDb.transaction(() => {
+      db.insert(entries).values(entry).run()
+      db.insert(entryVersions).values({
+        id: generateId(),
+        entry_id: id,
+        title,
+        content,
+        content_preview: stripHtml(content),
+        word_count: countWords(content),
+        version: 1,
+        change_desc: 'Initial',
+        created_at: now
+      }).run()
+    })
+    createEntryTx()
 
     return { ...entry, tags: [] }
   })
@@ -85,6 +87,7 @@ export function registerEntryHandlers(): void {
       query = query.innerJoin(entryTags, eq(entries.id, entryTags.entry_id))
         .innerJoin(tags, eq(entryTags.tag_id, tags.id))
         .where(and(...conditions, eq(tags.name, params.tag)))
+        .orderBy(desc(entries.is_pinned), desc(entries.last_edited_at))
     } else if (params?.search) {
       const sqliteDb = getSqliteDb()
       const searchResults = sqliteDb.prepare(
@@ -108,7 +111,7 @@ export function registerEntryHandlers(): void {
         updated_at: entries.updated_at,
         deleted_at: entries.deleted_at
       }).from(entries)
-        .where(and(...conditions, sql`rowid IN (${rowids.join(',')})`))
+        .where(and(...conditions, sql`rowid IN ${sql.raw('(' + rowids.join(',') + ')')}`))
         .orderBy(desc(entries.is_pinned), desc(entries.last_edited_at))
         .all()
 
@@ -215,6 +218,7 @@ export function registerEntryHandlers(): void {
 
   ipcMain.handle('entries:duplicate', async (_event, id: string) => {
     const db = getDb()
+    const sqliteDb = getSqliteDb()
     const original = db.select().from(entries).where(eq(entries.id, id)).get() as any
     if (!original) throw new Error('Entry not found')
 
@@ -231,7 +235,18 @@ export function registerEntryHandlers(): void {
     }
     delete newEntry.tags
 
-    db.insert(entries).values(newEntry).run()
+    const originalTags = db.select({ tag_id: entryTags.tag_id })
+      .from(entryTags)
+      .where(eq(entryTags.entry_id, id))
+      .all() as { tag_id: string }[]
+
+    const duplicateTx = sqliteDb.transaction(() => {
+      db.insert(entries).values(newEntry).run()
+      for (const { tag_id } of originalTags) {
+        db.insert(entryTags).values({ entry_id: newId, tag_id }).run()
+      }
+    })
+    duplicateTx()
 
     return db.select().from(entries).where(eq(entries.id, newId)).get()
   })

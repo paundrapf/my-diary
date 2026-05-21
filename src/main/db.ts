@@ -104,6 +104,20 @@ function runMigrations(db: Database.Database): void {
       INSERT INTO entries_fts(rowid, title, content_preview)
       VALUES (new.rowid, new.title, new.content_preview);
     END;
+
+    CREATE TRIGGER IF NOT EXISTS entries_soft_delete AFTER UPDATE OF deleted_at ON entries
+    WHEN new.deleted_at IS NOT NULL AND old.deleted_at IS NULL
+    BEGIN
+      INSERT INTO entries_fts(entries_fts, rowid, title, content_preview)
+      VALUES ('delete', old.rowid, old.title, old.content_preview);
+    END;
+
+    CREATE TRIGGER IF NOT EXISTS entries_soft_restore AFTER UPDATE OF deleted_at ON entries
+    WHEN new.deleted_at IS NULL AND old.deleted_at IS NOT NULL
+    BEGIN
+      INSERT INTO entries_fts(rowid, title, content_preview)
+      VALUES (new.rowid, new.title, new.content_preview);
+    END;
   `)
 
   const defaultSettings: Record<string, string> = {
