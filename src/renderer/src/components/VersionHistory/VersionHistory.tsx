@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEntryStore } from '../../stores/useEntryStore'
+import { sanitizeHtml } from '../../lib/sanitize'
 import type { EntryVersion } from '../../../../types'
 
 interface VersionHistoryProps {
@@ -49,7 +50,7 @@ export default function VersionHistory({ entryId }: VersionHistoryProps): JSX.El
     try {
       const version = await window.api.entries.getVersionById(versionId)
       if (version) {
-        setPreviewContent(version.content || '')
+        setPreviewContent(sanitizeHtml(version.content || ''))
         setViewMode('preview')
       }
     } catch {

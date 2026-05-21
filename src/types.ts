@@ -95,6 +95,7 @@ export interface ElectronAPI {
     lock: () => Promise<void>
     unlock: (pin: string) => Promise<boolean>
     setPin: (pin: string) => Promise<void>
+    onLocked: (callback: () => void) => () => void
     getWindow: () => { minimize: () => void; maximize: () => void; close: () => void }
   }
 }

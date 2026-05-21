@@ -9,18 +9,26 @@ let db: ReturnType<typeof drizzle<typeof schema>> | null = null
 let sqliteDb: Database.Database | null = null
 
 export function initDb(): void {
-  const dbPath = join(app.getPath('userData'), 'diary.db')
-  sqliteDb = new Database(dbPath)
+  try {
+    const dbPath = join(app.getPath('userData'), 'diary.db')
+    sqliteDb = new Database(dbPath)
 
-  sqliteDb.pragma('journal_mode = WAL')
-  sqliteDb.pragma('foreign_keys = ON')
+    sqliteDb.pragma('journal_mode = WAL')
+    sqliteDb.pragma('foreign_keys = ON')
 
-  runMigrations(sqliteDb)
+    runMigrations(sqliteDb)
 
-  db = drizzle(sqliteDb, { schema })
+    db = drizzle(sqliteDb, { schema })
+  } catch (err) {
+    console.error('Failed to initialize database:', err)
+    const { dialog } = require('electron')
+    dialog.showErrorBox('Database Error', `Failed to open database: ${err instanceof Error ? err.message : String(err)}\n\nThe app will now close.`)
+    app.quit()
+  }
 }
 
 function runMigrations(db: Database.Database): void {
+  const migrationTx = db.transaction(() => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS entries (
       id TEXT PRIMARY KEY NOT NULL,
@@ -144,6 +152,8 @@ function runMigrations(db: Database.Database): void {
   for (const [key, value] of Object.entries(defaultSettings)) {
     insertSetting.run(key, value)
   }
+  })
+  migrationTx()
 }
 
 export function getDb(): ReturnType<typeof drizzle<typeof schema>> {

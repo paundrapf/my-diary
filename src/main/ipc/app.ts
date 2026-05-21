@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, powerMonitor } from 'electron'
 import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
 import { getDb } from '../db'
@@ -21,7 +21,61 @@ function verifyPin(pin: string, stored: string): boolean {
   return hash === verify
 }
 
+function loadPersistentLockout(): void {
+  try {
+    const db = getDb()
+    const stored = db.select().from(settings).where(eq(settings.key, 'lockout_until')).get() as any
+    if (stored?.value) {
+      const val = parseInt(stored.value, 10)
+      if (!isNaN(val) && val > Date.now()) lockoutUntil = val
+    }
+    const attempts = db.select().from(settings).where(eq(settings.key, 'lockout_attempts')).get() as any
+    if (attempts?.value) {
+      const val = parseInt(attempts.value, 10)
+      if (!isNaN(val)) lockoutAttempts = val
+    }
+  } catch {
+    // DB not ready
+  }
+}
+
+function savePersistentLockout(): void {
+  try {
+    const db = getDb()
+    db.insert(settings).values({ key: 'lockout_until', value: String(lockoutUntil || 0) })
+      .onConflictDoUpdate({ target: settings.key, set: { value: String(lockoutUntil || 0) } }).run()
+    db.insert(settings).values({ key: 'lockout_attempts', value: String(lockoutAttempts) })
+      .onConflictDoUpdate({ target: settings.key, set: { value: String(lockoutAttempts) } }).run()
+  } catch {
+    // silent
+  }
+}
+
+function startIdleTimer(minutes: number): void {
+  if (idleTimer) clearTimeout(idleTimer)
+  if (minutes <= 0) return
+  idleTimer = setTimeout(() => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (win) {
+      win.webContents.send('app:locked')
+    }
+  }, minutes * 60 * 1000)
+}
+
 export function registerAppHandlers(): void {
+  // Window controls
+  ipcMain.handle('window:minimize', () => {
+    BrowserWindow.getFocusedWindow()?.minimize()
+  })
+  ipcMain.handle('window:maximize', () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (win?.isMaximized()) win.unmaximize()
+    else win?.maximize()
+  })
+  ipcMain.handle('window:close', () => {
+    BrowserWindow.getFocusedWindow()?.close()
+  })
+
   ipcMain.handle('app:lock', async () => {
     const win = BrowserWindow.getFocusedWindow()
     if (win) {
@@ -40,6 +94,7 @@ export function registerAppHandlers(): void {
     if (verifyPin(pin, pinHash)) {
       lockoutAttempts = 0
       lockoutUntil = null
+      savePersistentLockout()
       return true
     }
 
@@ -48,22 +103,37 @@ export function registerAppHandlers(): void {
       const backoff = Math.min(Math.pow(2, lockoutAttempts - 5), 300) * 1000
       lockoutUntil = Date.now() + backoff
     }
+    savePersistentLockout()
 
     return false
   })
 
   ipcMain.handle('app:setPin', async (_event, pin: string) => {
+    if (!/^\d{4,6}$/.test(pin)) {
+      throw new Error('PIN must be 4-6 digits')
+    }
     pinHash = hashPin(pin)
     const db = getDb()
     db.insert(settings).values({ key: 'pin_hash', value: pinHash })
       .onConflictDoUpdate({ target: settings.key, set: { value: pinHash } }).run()
+    // Read auto-lock timeout and start timer
+    const autoLock = db.select().from(settings).where(eq(settings.key, 'auto_lock_timeout')).get() as any
+    const mins = autoLock?.value ? parseInt(autoLock.value, 10) : 15
+    startIdleTimer(mins)
   })
 
-  try {
-    const db = getDb()
-    const stored = db.select().from(settings).where(eq(settings.key, 'pin_hash')).get() as any
-    if (stored) pinHash = stored.value
-  } catch {
-    // DB not initialized yet, that's ok
-  }
+  // Listen for power events to reset idle timer
+  powerMonitor.on('suspend', () => {
+    if (idleTimer) clearTimeout(idleTimer)
+  })
+  powerMonitor.on('resume', () => {
+    try {
+      const db = getDb()
+      const autoLock = db.select().from(settings).where(eq(settings.key, 'auto_lock_timeout')).get() as any
+      const mins = autoLock?.value ? parseInt(autoLock.value, 10) : 15
+      startIdleTimer(mins)
+    } catch { /* silent */ }
+  })
+
+  loadPersistentLockout()
 }

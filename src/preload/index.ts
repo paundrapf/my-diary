@@ -40,6 +40,11 @@ const api = {
     lock: () => ipcRenderer.invoke('app:lock'),
     unlock: (pin: string) => ipcRenderer.invoke('app:unlock', pin),
     setPin: (pin: string) => ipcRenderer.invoke('app:setPin', pin),
+    onLocked: (callback: () => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('app:locked', handler)
+      return () => ipcRenderer.removeListener('app:locked', handler)
+    },
     getWindow: () => ({
       minimize: () => ipcRenderer.invoke('window:minimize'),
       maximize: () => ipcRenderer.invoke('window:maximize'),
