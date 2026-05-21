@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/* Using system font stack — no external font dependencies */
 
 @tailwind base;
 @tailwind components;
@@ -54,6 +54,12 @@ body {
   display: flex;
   height: 100vh;
   width: 100vw;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
 }
 
 ::-webkit-scrollbar {
