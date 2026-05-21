@@ -32,6 +32,17 @@ export default function Journal(): JSX.Element {
 
   return (
     <div className="flex h-full">
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsMobileListOpen(true)}
+        className="lg:hidden fixed top-3 left-14 z-30 p-2 rounded-lg bg-bg-secondary border border-border-subtle text-text-secondary shadow-sm"
+        aria-label="Open entry list"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 4h10M3 8h10M3 12h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+
       <motion.div
         className="hidden lg:block"
         layout

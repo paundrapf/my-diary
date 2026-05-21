@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar/Sidebar'
+import ErrorBoundary from './components/ui/ErrorBoundary'
+import LockScreen from './components/LockScreen/LockScreen'
 import Journal from './pages/Journal'
 import Calendar from './pages/Calendar'
 import Insights from './pages/Insights'
@@ -20,10 +22,18 @@ export default function App(): JSX.Element {
   const navigate = useNavigate()
 
   const settings = useSettingsStore((s) => s.settings)
+  const isLocked = useUIStore((s) => s.isLocked)
+  const setLocked = useUIStore((s) => s.setLocked)
 
   useEffect(() => {
     loadEntries()
     loadSettings()
+
+    // Listen for lock events from main process
+    const unsubscribe = window.api.app.onLocked(() => {
+      setLocked(true)
+    })
+    return unsubscribe
   }, [])
 
   // Apply theme, accent color, and font size
@@ -71,18 +81,21 @@ export default function App(): JSX.Element {
           transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<Journal />} />
-            <Route path="/pinned" element={<Journal />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/insights" element={<Insights />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/trash" element={<Trash />} />
-            <Route path="/tags/:tag" element={<Journal />} />
-          </Routes>
-        </AnimatePresence>
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Journal />} />
+              <Route path="/pinned" element={<Journal />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/insights" element={<Insights />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/trash" element={<Trash />} />
+              <Route path="/tags/:tag" element={<Journal />} />
+            </Routes>
+          </AnimatePresence>
+        </ErrorBoundary>
       </main>
+      {isLocked && <LockScreen onUnlock={() => setLocked(false)} />}
     </div>
   )
 }
