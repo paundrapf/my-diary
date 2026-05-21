@@ -5,6 +5,7 @@ import { join } from 'path'
 import { existsSync, unlinkSync } from 'fs'
 import crypto from 'crypto'
 import * as schema from '../../drizzle/schema'
+import { logger } from './logger'
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null
 let sqliteDb: Database.Database | null = null
@@ -33,7 +34,7 @@ export function initDb(): void {
       const isCorrupt = integrity.some((row) => row.integrity_check !== 'ok')
 
       if (isCorrupt) {
-        console.warn('Database corruption detected. Recreating...')
+        logger.warn('Database corruption detected. Recreating...')
         sqliteDb.close()
         unlinkSync(dbPath)
         // Also delete WAL files
@@ -50,7 +51,7 @@ export function initDb(): void {
 
     db = drizzle(sqliteDb, { schema })
   } catch (err) {
-    console.error('Failed to initialize database:', err)
+    logger.error(`Failed to initialize database: ${err instanceof Error ? err.message : String(err)}`)
 
     // Nuclear option: delete and recreate
     if (dbPath && existsSync(dbPath)) {
@@ -61,10 +62,10 @@ export function initDb(): void {
         try { unlinkSync(dbPath + '-shm') } catch { /* ignore */ }
         sqliteDb = createFreshDb(dbPath)
         db = drizzle(sqliteDb, { schema })
-        console.log('Database recovered from corruption')
+        logger.info('Database recovered from corruption')
         return
       } catch (recoverErr) {
-        console.error('Failed to recover database:', recoverErr)
+        logger.error(`Failed to recover database: ${recoverErr instanceof Error ? recoverErr.message : String(recoverErr)}`)
       }
     }
 

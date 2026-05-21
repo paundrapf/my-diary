@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar/Sidebar'
 import ErrorBoundary from './components/ui/ErrorBoundary'
 import LockScreen from './components/LockScreen/LockScreen'
+import UpdateModal from './components/UpdateModal/UpdateModal'
 import Journal from './pages/Journal'
 import Calendar from './pages/Calendar'
 import Insights from './pages/Insights'
@@ -83,8 +84,7 @@ export default function App(): JSX.Element {
         e.preventDefault()
         const activeId = useEntryStore.getState().activeEntryId
         if (activeId) {
-          // Trigger export for active entry
-          console.log('Export entry:', activeId)
+          window.api.app.log('info', `Export shortcut triggered for entry: ${activeId}`)
         }
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
@@ -143,6 +143,7 @@ export default function App(): JSX.Element {
         </ErrorBoundary>
       </main>
       {isLocked && <LockScreen onUnlock={() => setLocked(false)} />}
+      <UpdateModal />
     </div>
   )
 }

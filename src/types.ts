@@ -110,7 +110,13 @@ export interface ElectronAPI {
     lock: () => Promise<void>
     unlock: (pin: string) => Promise<boolean>
     setPin: (pin: string) => Promise<void>
+    log: (level: string, message: string) => Promise<void>
+    openLogsFolder: () => Promise<void>
+    getVersion: () => Promise<string>
+    quitAndInstall: () => Promise<void>
     onLocked: (callback: () => void) => () => void
+    onUpdateAvailable: (callback: (version: string) => void) => () => void
+    onUpdateDownloaded: (callback: (version: string) => void) => () => void
     getWindow: () => { minimize: () => void; maximize: () => void; close: () => void }
   }
 }

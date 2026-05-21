@@ -5,3 +5,5 @@ dist/
 *.bak
 .DS_Store
 Thumbs.db
+AGENTS.md
+MEMORY.md

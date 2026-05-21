@@ -49,10 +49,24 @@ const api = {
     lock: () => ipcRenderer.invoke('app:lock'),
     unlock: (pin: string) => ipcRenderer.invoke('app:unlock', pin),
     setPin: (pin: string) => ipcRenderer.invoke('app:setPin', pin),
+    log: (level: string, message: string) => ipcRenderer.invoke('app:log', level, message),
+    openLogsFolder: () => ipcRenderer.invoke('app:openLogsFolder'),
+    getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    quitAndInstall: () => ipcRenderer.invoke('app:quit-and-install'),
     onLocked: (callback: () => void) => {
       const handler = (): void => callback()
       ipcRenderer.on('app:locked', handler)
       return () => ipcRenderer.removeListener('app:locked', handler)
+    },
+    onUpdateAvailable: (callback: (version: string) => void) => {
+      const handler = (_event: unknown, version: string): void => callback(version)
+      ipcRenderer.on('app:update-available', handler)
+      return () => ipcRenderer.removeListener('app:update-available', handler)
+    },
+    onUpdateDownloaded: (callback: (version: string) => void) => {
+      const handler = (_event: unknown, version: string): void => callback(version)
+      ipcRenderer.on('app:update-downloaded', handler)
+      return () => ipcRenderer.removeListener('app:update-downloaded', handler)
     },
     getWindow: () => ({
       minimize: () => ipcRenderer.invoke('window:minimize'),

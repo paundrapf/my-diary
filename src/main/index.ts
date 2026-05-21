@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
 import { initDb } from './db'
 import { registerEntryHandlers } from './ipc/entries'
 import { registerTagHandlers } from './ipc/tags'
@@ -9,6 +10,7 @@ import { registerSettingsHandlers } from './ipc/settings'
 import { registerInsightsHandlers } from './ipc/insights'
 import { registerExportHandlers } from './ipc/export'
 import { registerAppHandlers } from './ipc/app'
+import { logger } from './logger'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -67,7 +69,51 @@ app.whenReady().then(() => {
   registerExportHandlers()
   registerAppHandlers()
 
+  // Auto-updater
+  autoUpdater.logger = null as any // we use our own logger
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = false
+
+  autoUpdater.on('checking-for-update', () => {
+    logger.info('Checking for update...')
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    logger.info(`Update available: ${info.version}`)
+    if (mainWindow) {
+      mainWindow.webContents.send('app:update-available', info.version)
+    }
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    logger.info('Update not available')
+  })
+
+  autoUpdater.on('error', (err) => {
+    logger.error(`Auto-updater error: ${err.message}`)
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    logger.info(`Update downloaded: ${info.version}`)
+    if (mainWindow) {
+      mainWindow.webContents.send('app:update-downloaded', info.version)
+    }
+  })
+
+  ipcMain.handle('app:quit-and-install', () => {
+    autoUpdater.quitAndInstall()
+  })
+
   createWindow()
+
+  // Delayed update check (10s after ready)
+  setTimeout(() => {
+    if (!is.dev) {
+      autoUpdater.checkForUpdates().catch((err) => {
+        logger.error(`Failed to check for updates: ${err.message}`)
+      })
+    }
+  }, 10000)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

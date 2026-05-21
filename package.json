@@ -1,6 +1,6 @@
 {
   "name": "my-diary",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "My Diary - Desktop journaling app with git-like version history",
   "main": "./out/main/index.js",
   "author": "Ndra",
@@ -9,7 +9,43 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.mydiary.app",
+    "productName": "My Diary",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "!node_modules/**/docs",
+      "!node_modules/**/test",
+      "!node_modules/**/tests",
+      "!node_modules/**/*.md"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png",
+      "category": "Office"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "paundrapf",
+      "repo": "my-diary",
+      "releaseType": "release"
+    }
   },
   "dependencies": {
     "@tiptap/core": "^2.10.0",
@@ -31,6 +67,7 @@
     "better-sqlite3": "^11.7.0",
     "diff-match-patch": "^1.0.5",
     "drizzle-orm": "^0.38.0",
+    "electron-updater": "^6.3.0",
     "framer-motion": "^12.0.0",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",

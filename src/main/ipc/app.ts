@@ -1,8 +1,11 @@
-import { ipcMain, BrowserWindow, powerMonitor } from 'electron'
+import { ipcMain, BrowserWindow, powerMonitor, shell } from 'electron'
 import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
+import { app } from 'electron'
+import { join } from 'path'
 import { getDb } from '../db'
 import { settings } from '../../../drizzle/schema'
+import { logger } from '../logger'
 
 let pinHash: string | null = null
 let lockoutUntil: number | null = null
@@ -63,6 +66,31 @@ function startIdleTimer(minutes: number): void {
 }
 
 export function registerAppHandlers(): void {
+  ipcMain.handle('app:log', async (_event, level: string, message: string) => {
+    switch (level) {
+      case 'debug':
+        logger.debug(message)
+        break
+      case 'warn':
+        logger.warn(message)
+        break
+      case 'error':
+        logger.error(message)
+        break
+      default:
+        logger.info(message)
+    }
+  })
+
+  ipcMain.handle('app:openLogsFolder', async () => {
+    const logPath = join(app.getPath('userData'), 'logs')
+    shell.openPath(logPath)
+  })
+
+  ipcMain.handle('app:getVersion', async () => {
+    return app.getVersion()
+  })
+
   // Window controls
   ipcMain.handle('window:minimize', () => {
     BrowserWindow.getFocusedWindow()?.minimize()

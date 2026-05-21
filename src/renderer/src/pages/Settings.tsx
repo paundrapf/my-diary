@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSettingsStore } from '../stores/useSettingsStore'
 
 const ACCENT_COLORS = [
@@ -24,6 +24,11 @@ export default function Settings(): JSX.Element {
   const updateSetting = useSettingsStore((s) => s.updateSetting)
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState('')
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    window.api.app.getVersion().then(setAppVersion).catch(() => setAppVersion(''))
+  }, [])
 
   if (!settings) return <div className="p-8 text-text-tertiary text-sm">Loading...</div>
 
@@ -227,6 +232,20 @@ export default function Settings(): JSX.Element {
               <option value={1}>Monday</option>
             </select>
           </SettingRow>
+        </Section>
+
+        <Section title="About">
+          <div className="space-y-3">
+            <SettingRow label="Version">
+              <span className="text-[11px] text-text-secondary">{appVersion}</span>
+            </SettingRow>
+            <button
+              onClick={() => window.api.app.openLogsFolder()}
+              className="w-full px-3 py-1.5 rounded-lg bg-bg-tertiary text-text-secondary text-xs hover:bg-bg-tertiary/70 transition-colors text-left"
+            >
+              View Logs
+            </button>
+          </div>
         </Section>
       </div>
     </motion.div>
