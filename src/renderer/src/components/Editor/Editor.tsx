@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -16,6 +16,7 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import type { Entry } from '../../../../types'
 import { useEntryStore } from '../../stores/useEntryStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
 import MoodPicker from '../MoodPicker/MoodPicker'
 import TagManager from '../TagManager/TagManager'
 import VersionHistory from '../VersionHistory/VersionHistory'
@@ -40,35 +41,47 @@ export default function Editor({ entry, onBack }: EditorProps): JSX.Element {
   const createVersion = useEntryStore((s) => s.createVersion)
   const openVersionHistory = useEntryStore((s) => s.openVersionHistory)
   const isVersionHistoryOpen = useEntryStore((s) => s.isVersionHistoryOpen)
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const settings = useSettingsStore((s) => s.settings)
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'error'>('saved')
   const [title, setTitle] = useState(entry.title)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const titleRef = useRef(title)
+  const entryIdRef = useRef(entry.id)
+  const entryMoodRef = useRef(entry.mood)
+  const handleSaveRef = useRef<(() => void) | null>(null)
+
+  // Keep refs in sync with latest values
+  titleRef.current = title
+  entryIdRef.current = entry.id
+  entryMoodRef.current = entry.mood
+
+  const autoSaveDelay = settings?.auto_save_delay ?? 800
+
+  const editorExtensions = useMemo(() => [
+    StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+    Placeholder.configure({ placeholder: 'Start writing...' }),
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    Image,
+    Link.configure({ openOnClick: false }),
+    CharacterCount,
+    Typography,
+    Highlight,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableCell,
+    TableHeader
+  ], [])
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] }
-      }),
-      Placeholder.configure({ placeholder: 'Start writing...' }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Image,
-      Link.configure({ openOnClick: false }),
-      CharacterCount,
-      Typography,
-      Highlight,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableCell,
-      TableHeader
-    ],
+    extensions: editorExtensions,
     content: entry.content || '',
-    onUpdate: ({ editor: ed }) => {
+    onUpdate: () => {
       setSaveStatus('unsaved')
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
       autoSaveTimer.current = setTimeout(() => {
-        handleSave(ed.getHTML(), ed.getText())
-      }, 800)
+        handleSaveRef.current?.()
+      }, autoSaveDelay)
     },
     editorProps: {
       attributes: {
@@ -77,35 +90,56 @@ export default function Editor({ entry, onBack }: EditorProps): JSX.Element {
     }
   })
 
+  // Sync editor content when entry changes externally (version restore, etc.)
   useEffect(() => {
-    if (editor && entry.content) {
+    if (editor && entry.content !== undefined) {
       editor.commands.setContent(entry.content)
     }
     setTitle(entry.title)
-  }, [entry.id])
+  }, [entry.id, entry.content, editor])
 
-  const handleSave = useCallback(async (content?: string, plainText?: string): Promise<void> => {
+  // Cleanup auto-save timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current)
+        autoSaveTimer.current = null
+      }
+    }
+  }, [])
+
+  const handleSave = useCallback(async (): Promise<void> => {
+    const currentTitle = titleRef.current
+    const currentId = entryIdRef.current
+    const currentContent = editor?.getHTML() || ''
+    const currentMood = entryMoodRef.current
+
     setSaveStatus('saving')
     try {
       await updateEntry({
-        id: entry.id,
-        title,
-        content: content || editor?.getHTML() || entry.content,
-        mood: entry.mood || undefined
+        id: currentId,
+        title: currentTitle,
+        content: currentContent,
+        mood: currentMood ?? undefined
       })
       setSaveStatus('saved')
     } catch {
-      setSaveStatus('saved')
+      setSaveStatus('error')
     }
-  }, [entry.id, title, editor, updateEntry])
+  }, [editor, updateEntry])
+
+  // Keep handleSaveRef synced so onUpdate always calls latest
+  useEffect(() => {
+    handleSaveRef.current = handleSave
+  }, [handleSave])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setTitle(e.target.value)
     setSaveStatus('unsaved')
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     autoSaveTimer.current = setTimeout(() => {
-      handleSave()
-    }, 800)
+      handleSaveRef.current?.()
+    }, autoSaveDelay)
   }
 
   const handleSaveVersion = async (): Promise<void> => {
@@ -261,7 +295,7 @@ export default function Editor({ entry, onBack }: EditorProps): JSX.Element {
             animate={{ opacity: saveStatus === 'saving' ? 0.5 : 1 }}
             transition={{ duration: 0.2 }}
           >
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? 'Unsaved changes' : `Saved ${formatDate(entry.last_edited_at || entry.updated_at)}`}
+            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? 'Unsaved changes' : saveStatus === 'error' ? 'Failed to save' : `Saved ${formatDate(entry.last_edited_at || entry.updated_at)}`}
           </motion.span>
           <span className="w-px h-3 bg-border-subtle" />
           <span>{wordCount} words</span>
