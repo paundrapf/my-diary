@@ -50,7 +50,8 @@ export default function TagManager({ entryId }: TagManagerProps): JSX.Element {
 
     const currentIds = tags.map((t) => t.id)
     if (!currentIds.includes(tagId)) {
-      const newTags = [...tags, { id: tagId, name, color: '#7F77DD' }]
+      const tagColor = existing?.color || '#7F77DD'
+      const newTags = [...tags, { id: tagId, name, color: tagColor }]
       await window.api.entryTags.setTags({ entryId, tagIds: newTags.map((t) => t.id) })
       setTags(newTags)
     }

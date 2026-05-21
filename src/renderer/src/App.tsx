@@ -19,10 +19,36 @@ export default function App(): JSX.Element {
   const loadSettings = useSettingsStore((s) => s.loadSettings)
   const navigate = useNavigate()
 
+  const settings = useSettingsStore((s) => s.settings)
+
   useEffect(() => {
     loadEntries()
     loadSettings()
   }, [])
+
+  // Apply theme, accent color, and font size
+  useEffect(() => {
+    if (!settings) return
+
+    // Theme
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const resolvedTheme =
+      settings.theme === 'system' ? (prefersDark ? 'dark' : 'light') : settings.theme
+    document.documentElement.className = resolvedTheme
+
+    // Accent color
+    document.documentElement.style.setProperty('--accent', settings.accent_color)
+    document.documentElement.style.setProperty(
+      '--accent-soft',
+      settings.accent_color + '20'
+    )
+
+    // Editor font size
+    document.documentElement.style.setProperty(
+      '--editor-font-size',
+      `${settings.editor_font_size}px`
+    )
+  }, [settings])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -48,6 +74,7 @@ export default function App(): JSX.Element {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Journal />} />
+            <Route path="/pinned" element={<Journal />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/settings" element={<Settings />} />

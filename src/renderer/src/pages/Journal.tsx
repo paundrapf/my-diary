@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import EntryList from '../components/EntryList/EntryList'
 import Editor from '../components/Editor/Editor'
@@ -12,12 +13,18 @@ export default function Journal(): JSX.Element {
   const searchQuery = useUIStore((s) => s.searchQuery)
   const activeTag = useUIStore((s) => s.activeTag)
   const [isMobileListOpen, setIsMobileListOpen] = useState(false)
+  const location = useLocation()
 
   const activeEntry = entries.find((e) => e.id === activeEntryId) || null
 
   useEffect(() => {
-    loadEntries({ search: searchQuery || undefined, tag: activeTag || undefined })
-  }, [searchQuery, activeTag])
+    const isPinnedRoute = location.pathname === '/pinned'
+    loadEntries({
+      search: searchQuery || undefined,
+      tag: activeTag || undefined,
+      pinned: isPinnedRoute || undefined
+    })
+  }, [searchQuery, activeTag, location.pathname])
 
   const handleBack = useCallback(() => {
     setIsMobileListOpen(false)

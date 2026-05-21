@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useEntryStore } from '../../stores/useEntryStore'
 
@@ -18,6 +18,10 @@ const moodLevels = [
 export default function MoodPicker({ entryId, currentMood }: MoodPickerProps): JSX.Element {
   const [selected, setSelected] = useState<number | null>(currentMood)
   const updateEntry = useEntryStore((s) => s.updateEntry)
+
+  useEffect(() => {
+    setSelected(currentMood)
+  }, [currentMood])
 
   const handleSelect = async (level: number): Promise<void> => {
     const newMood = selected === level ? null : level

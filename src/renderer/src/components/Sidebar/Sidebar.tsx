@@ -23,37 +23,17 @@ interface TagItem {
 export default function Sidebar(): JSX.Element {
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
-  const activePage = useUIStore((s) => s.activePage)
   const setActivePage = useUIStore((s) => s.setActivePage)
   const searchQuery = useUIStore((s) => s.searchQuery)
   const setSearchQuery = useUIStore((s) => s.setSearchQuery)
-  const isSearchFocused = useUIStore((s) => s.isSearchFocused)
-  const setSearchFocused = useUIStore((s) => s.setSearchFocused)
   const loadEntries = useEntryStore((s) => s.loadEntries)
   const navigate = useNavigate()
   const location = useLocation()
   const [tags, setTags] = useState<TagItem[]>([])
   const [isPeeking, setIsPeeking] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
 
   useEffect(() => {
     loadTags()
-  }, [])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault()
-        setShowSearch(true)
-        setSearchFocused(true)
-      }
-      if (e.key === 'Escape') {
-        setShowSearch(false)
-        setSearchFocused(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const loadTags = async (): Promise<void> => {
@@ -73,6 +53,15 @@ export default function Sidebar(): JSX.Element {
       loadEntries()
     }
     navigate(item.path)
+  }
+
+  const isActive = (item: typeof navItems[0]): boolean => {
+    if (item.path === '/pinned') return location.pathname === '/pinned'
+    if (item.path === '/calendar') return location.pathname === '/calendar'
+    if (item.path === '/insights') return location.pathname === '/insights'
+    if (item.page === 'tags') return location.pathname.startsWith('/tags/')
+    // Default "Semua Entri" - active on root but not on tag pages
+    return location.pathname === '/' || location.pathname === ''
   }
 
   const handleTagClick = (tagName: string): void => {
@@ -169,7 +158,7 @@ export default function Sidebar(): JSX.Element {
                       key={item.label}
                       onClick={() => handleNav(item)}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
-                        activePage === item.page && location.pathname === item.path
+                        isActive(item)
                           ? 'bg-accent-soft text-accent font-medium'
                           : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
                       }`}

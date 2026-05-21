@@ -1,13 +1,47 @@
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSettingsStore } from '../stores/useSettingsStore'
+
+const ACCENT_COLORS = [
+  { name: 'Purple', value: '#7F77DD' },
+  { name: 'Teal', value: '#14B8A6' },
+  { name: 'Coral', value: '#F97316' },
+  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Pink', value: '#EC4899' },
+  { name: 'Amber', value: '#F59E0B' },
+  { name: 'Green', value: '#10B981' },
+  { name: 'Gray', value: '#71717A' }
+]
+
+const EDITOR_FONTS = [
+  { name: 'Inter', value: 'Inter' },
+  { name: 'Merriweather', value: 'Merriweather' },
+  { name: 'JetBrains Mono', value: 'JetBrains Mono' }
+]
 
 export default function Settings(): JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const updateSetting = useSettingsStore((s) => s.updateSetting)
   const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState('')
 
   if (!settings) return <div className="p-8 text-text-tertiary text-sm">Loading...</div>
+
+  const isValidPin = /^\d{4,6}$/.test(pin)
+
+  const handleSetPin = async (): Promise<void> => {
+    if (!isValidPin) {
+      setPinError('PIN must be 4-6 digits')
+      return
+    }
+    setPinError('')
+    try {
+      await window.api.app.setPin(pin)
+      setPin('')
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : 'Failed to set PIN')
+    }
+  }
 
   return (
     <motion.div
@@ -20,7 +54,7 @@ export default function Settings(): JSX.Element {
 
       <div className="max-w-xl space-y-6">
         <Section title="Theme">
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-4">
             {(['light', 'dark', 'system'] as const).map((t) => (
               <button
                 key={t}
@@ -35,10 +69,38 @@ export default function Settings(): JSX.Element {
               </button>
             ))}
           </div>
+          <div>
+            <label className="text-[11px] text-text-secondary block mb-2">Accent Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {ACCENT_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => updateSetting('accent_color', c.value)}
+                  className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${
+                    settings.accent_color === c.value ? 'ring-2 ring-offset-2 ring-text-primary' : ''
+                  }`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          </div>
         </Section>
 
         <Section title="Editor">
           <div className="space-y-3">
+            <div>
+              <label className="text-[11px] text-text-secondary block mb-1">Font</label>
+              <select
+                value={settings.editor_font}
+                onChange={(e) => updateSetting('editor_font', e.target.value)}
+                className="w-full px-3 py-1.5 text-xs bg-bg-tertiary rounded-lg border-none outline-none text-text-primary"
+              >
+                {EDITOR_FONTS.map((f) => (
+                  <option key={f.value} value={f.value}>{f.name}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-[11px] text-text-secondary block mb-1">Font Size</label>
               <input
@@ -50,6 +112,19 @@ export default function Settings(): JSX.Element {
                 className="w-full accent-accent"
               />
               <span className="text-[10px] text-text-tertiary">{settings.editor_font_size}px</span>
+            </div>
+            <div>
+              <label className="text-[11px] text-text-secondary block mb-1">Auto-save Delay</label>
+              <select
+                value={settings.auto_save_delay}
+                onChange={(e) => updateSetting('auto_save_delay', e.target.value)}
+                className="px-2 py-1 text-xs bg-bg-tertiary rounded-lg border-none outline-none text-text-primary"
+              >
+                <option value={500}>0.5s</option>
+                <option value={1000}>1s</option>
+                <option value={2000}>2s</option>
+                <option value={5000}>5s</option>
+              </select>
             </div>
             <SettingRow label="Spell Check">
               <Toggle
@@ -74,23 +149,27 @@ export default function Settings(): JSX.Element {
                 <input
                   type="password"
                   value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  onChange={(e) => {
+                    setPin(e.target.value)
+                    setPinError('')
+                  }}
                   placeholder="Enter PIN (4-6 digits)"
                   maxLength={6}
+                  inputMode="numeric"
+                  pattern="\d*"
                   className="flex-1 px-3 py-1.5 text-xs bg-bg-tertiary rounded-lg border-none outline-none text-text-primary placeholder:text-text-tertiary"
                 />
                 <button
-                  onClick={async () => {
-                    if (pin.length >= 4) {
-                      await window.api.app.setPin(pin)
-                      setPin('')
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs"
+                  onClick={handleSetPin}
+                  disabled={!isValidPin}
+                  className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Set
                 </button>
               </div>
+              {pinError && (
+                <p className="text-[11px] text-red-500 mt-1">{pinError}</p>
+              )}
             </div>
             <SettingRow label="Auto-lock">
               <select
