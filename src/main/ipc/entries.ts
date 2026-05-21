@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { eq, desc, sql, and, isNull, isNotNull } from 'drizzle-orm'
 import { getDb, generateId, nowISO, getSqliteDb } from '../db'
 import { entries, entryVersions, entryTags, tags } from '../../../drizzle/schema'
+import { computeDiffHtml } from '../diff'
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim().slice(0, 200)
@@ -341,7 +342,6 @@ export function registerEntryHandlers(): void {
 
     if (!fromVersion || !toVersion) throw new Error('Version not found')
 
-    const { computeDiffHtml } = require('../diff')
     return computeDiffHtml(
       fromVersion.content_preview || '',
       toVersion.content_preview || ''

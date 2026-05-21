@@ -1,5 +1,8 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { eq } from 'drizzle-orm'
 import crypto from 'crypto'
+import { getDb } from '../db'
+import { settings } from '../../../drizzle/schema'
 
 let pinHash: string | null = null
 let lockoutUntil: number | null = null
@@ -51,17 +54,11 @@ export function registerAppHandlers(): void {
 
   ipcMain.handle('app:setPin', async (_event, pin: string) => {
     pinHash = hashPin(pin)
-    const { getDb } = require('../db')
-    const { settings } = require('../../../drizzle/schema')
-    const { eq } = require('drizzle-orm')
     const db = getDb()
     db.insert(settings).values({ key: 'pin_hash', value: pinHash })
       .onConflictDoUpdate({ target: settings.key, set: { value: pinHash } }).run()
   })
 
-  const { getDb } = require('../db')
-  const { settings } = require('../../../drizzle/schema')
-  const { eq } = require('drizzle-orm')
   try {
     const db = getDb()
     const stored = db.select().from(settings).where(eq(settings.key, 'pin_hash')).get() as any

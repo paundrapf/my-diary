@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { app } from 'electron'
 import { join } from 'path'
+import crypto from 'crypto'
 import * as schema from '../../drizzle/schema'
 
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null
@@ -142,8 +143,7 @@ export function getSqliteDb(): Database.Database {
 }
 
 export function generateId(): string {
-  const bytes = require('crypto').randomBytes(16)
-  return bytes.toString('hex')
+  return crypto.randomBytes(16).toString('hex')
 }
 
 export function nowISO(): string {
